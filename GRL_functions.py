@@ -78,38 +78,6 @@ def read_models(institution_dir, variable_dir, start_date, end_date):
     return multi_model
 
 
-def read_member_seasonal(read_path, write_path, m, var, start_date, end_date):
-    """ Read in 20CRv3 netcdf files from NCI, group all years together, calculate seasonal anomalies using user specified base period, and save off files for each member.
-        
-        Args:
-        read_path (str): data set of first eruption 
-        write_path (str): data set of secon
-        m (int): member number (format )
-        var (str): variable (either 'TMP' or 'PRATE')
-        start_date (date_str): start of base period for calculating anomalies
-        end_date (date_str): end of base period for calculating anomalies
-    
-    """
-    
-    import xarray as xr, numpy as np
-    
-    member_ds_t = xr.open_mfdataset(read_path, parallel=True)
-    member_ds_t = member_ds_t.chunk(chunks={'time':-1, 'lat':110, 'lon':110})
-
-    # group the data by month (take the monthly mean)
-    reanal_mon = member_ds_t.resample(time='M').mean(dim='time').chunk(chunks={'time':-1, 'lat':110, 'lon':110})
-
-    # use functions to calculate the seasonal anomalies for the globe
-    seasonal_anom_glob = seasonal_anomaly(reanal_mon, start_date, end_date)
-    
-    #write file to netcdf
-    seasonal_anom_glob.to_netcdf(f'{write_path}/20CR_{var}_seasonal_members/R_season_anom_Glob_{var}{m}.nc')
-    
-    print(f'Read in member {m}, taken seasonal anomalies and written to netcdf file in folder "20CR_{var}_seasonal_members"')
-    
-    return
-
-
 def SEA_combine(K,S,A,E,P,names):
     """ Reset the time axis for data used in the superposed epoch analysis  
         
@@ -229,9 +197,9 @@ def stat_sig(dataset):
     
     # calculate the standard deviation 
     if hasattr(dataset, 'time'):
-        std = dataset.sel(time = slice('1850-01', '1881-01')).std(dim = ['time'])
+        std = dataset.sel(time = slice('1850-01', '1879-12')).std(dim = ['time'])
     elif hasattr(dataset, 'seasonyear'):
-        std = dataset.sel(seasonyear = slice('1850', '1881')).std(dim = ['seasonyear'])
+        std = dataset.sel(seasonyear = slice('1850', '1879')).std(dim = ['seasonyear'])
     
     # mark points oustide the 2 standard deviation threshold with a 100 (and non significant points with a zero)
     sig = xr.where((dataset < - 2*std) | (dataset > 2*std), 100, 0)
